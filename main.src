@@ -1,0 +1,6 @@
+use crate::iso;
+
+fn main() {
+    print("Hello World!");
+    os("shutdown");
+}
