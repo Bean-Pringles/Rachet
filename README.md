@@ -18,7 +18,7 @@
 
 3. Run python3 reset.py to get rid of any iso, pycache, temp assembley, or iso folder.
 
-4. Run python3 compiler.py <Your codes name (Mine is main.src I would put main.src)>
+4. Run python3 compiler.py <Your code's name (Mine is main.src, so I would put main.src)>
 
 5. Boot the new ISO using qemu with the command: 
 qemu-system-i386 -cdrom main.iso -boot d -no-reboot
@@ -55,4 +55,6 @@ os("Shutdown") stops the kernal.
 
 4. Add unsafe blocks
 
-5. Lots of tears.
+5. Lots of tears
+
+6. Lots of tears.
