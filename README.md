@@ -34,7 +34,8 @@ use crate::iso;
 
 fn main() {
     print("Hello World!");
-    os("shutdown");
+    let x = 5;
+    print(x);
 }
 
 The use crate::iso line tells the compiler to make it into an iso file.
@@ -43,13 +44,15 @@ The fn main is the function that is first ran.
 
 print("Hello World!") prints Hello World to the screen throught the VGA Buffer.
 
-os("Shutdown") stops the kernal.
+The let x = 5 command assigns the varible x to the value of 5.
+
+print(x) prints the value of x, you can tell because it doesn't have quotes.
 
 # To come:
 
 1. Add a input function
 
-2. Add varibles and strings
+2. Add strings
 
 3. Add if statements
 
