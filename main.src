@@ -1,0 +1,9 @@
+use crate::iso;
+
+fn main() {
+    print("Hello World!");
+    let y = 6;
+    let x: i32 = 5 + y;
+    print(x);
+    print("Pls be 11");
+}
