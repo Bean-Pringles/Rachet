@@ -1,0 +1,10 @@
+use crate::iso;
+
+fn main() {
+  print("Hello World!");
+  let x = 3;
+  ley y: i32 = 4;
+  let z = x * y;
+  print(z);
+  print("Should be 12");
+}
