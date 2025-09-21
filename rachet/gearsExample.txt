@@ -1,0 +1,11 @@
+gears compress notes.txt
+# → notes.rxc, deletes notes.txt
+
+gears decompress notes.rxc
+# → notes.rx, deletes notes.rxc
+
+gears transform notes.txt
+# → notes.rx, deletes notes.txt
+
+gears compress notes.txt --noreplace
+# → Skips if notes.rxc exists, notes.txt stays
