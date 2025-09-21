@@ -25,9 +25,10 @@ This compiler is licensed under the [Bean Pringles Compiler License (BPC License
 
 3. Move the compiled exe back to the folder the setup.py is located in
 
-4. Run python setup.py (This gives the file its own icon)
+4. Run python setup.py (This gives the files its own icon, and it also adds gears to path)
 
 # To run:
+***Make sure it isn't a compressed file, .rxc***
 
 1. First run wsl, this will boot you into wsl.
 
