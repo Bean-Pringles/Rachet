@@ -15,6 +15,18 @@ This compiler is licensed under the [Bean Pringles Compiler License (BPC License
 
 5. Python
 
+6. Pyinstaller
+
+# Set Up
+
+1. Naviagate to the home directory with setup.py
+
+2. Run pyinstaller --onefile --noconsole compiler.py
+
+3. Move the compiled exe back to the folder the setup.py is located in
+
+4. Run python setup.py (This gives the file its own icon)
+
 # To run:
 
 1. First run wsl, this will boot you into wsl.
@@ -23,7 +35,7 @@ This compiler is licensed under the [Bean Pringles Compiler License (BPC License
 
 3. Run python3 reset.py to get rid of any iso, pycache, temp assembley, or iso folder.
 
-4. Run python3 compiler.py <Your code's name (Mine is main.rct, so I would put main.rct)>
+4. Run python3 compiler.py <Your code's name (Mine is main.rcht, so I would put main.rcht)>
 
 5. Boot the new ISO using qemu with the command: 
 qemu-system-i386 -cdrom main.iso -boot d -no-reboot
