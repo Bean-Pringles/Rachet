@@ -18,7 +18,7 @@ def delete_key_recursive(root, key_path):
     except FileNotFoundError:
         pass
 
-def register_rct(ext=".rcht", prog_name="RachetFile",
+def register_rct(ext=".rx", prog_name="RachetFile",
                  description="Rachet Source File",
                  icon_path=None, launcher=None):
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -56,7 +56,7 @@ def register_rct(ext=".rcht", prog_name="RachetFile",
     with winreg.CreateKey(root, f"{classes}\\{prog_name}\\Shell\\Open\\Command") as key:
         winreg.SetValueEx(key, "", 0, winreg.REG_SZ, f'"{launcher}" "%1"')
 
-    print("[+] .rcht files registered with custom icon and launcher.")
+    print("[+] .rx files registered with custom icon and launcher.")
 
 def restart_explorer():
     """Restart Windows Explorer to refresh icons."""
@@ -68,13 +68,13 @@ def restart_explorer():
     print("[*] For the description to update, you may need to log out and back in.")
 
 if __name__ == "__main__":
-    print("[*] Clearing old .rcht registry entries...")
-    delete_key_recursive(winreg.HKEY_CURRENT_USER, r"Software\Classes\.rcht")
+    print("[*] Clearing old .rx registry entries...")
+    delete_key_recursive(winreg.HKEY_CURRENT_USER, r"Software\Classes\.rx")
     delete_key_recursive(winreg.HKEY_CURRENT_USER, r"Software\Classes\RachetFile")
     
-    print("[*] Registering .rcht file type...")
+    print("[*] Registering .rx file type...")
     register_rct()
     
     restart_explorer()
-    print("[*] Done! Your .rcht files should now show the icon and open with compiler.exe.")
+    print("[*] Done! Your .rx files should now show the icon and open with compiler.exe.")
     print("[*] If the description still shows 'Resource Compiler Template', log out and log back in.")
