@@ -1,0 +1,34 @@
+{
+  "name": "rachet",
+  "displayName": "Rachet",
+  "description": "Syntax highlighting and support for the Rachet programming language",
+  "version": "0.1.0",
+  "readme": "README.md",
+  "publisher": "Bean Pringles",
+  "engines": { "vscode": "^1.80.0" },
+  "categories": ["Languages"],
+  "contributes": {
+    "languages": [
+      {
+        "id": "rachet",
+        "aliases": ["Rachet", "rachet"],
+        "extensions": [".rx"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "rachet",
+        "scopeName": "source.rachet",
+        "path": "./syntaxes/rachet.tmLanguage.json"
+      }
+    ],
+    "themes": [
+      {
+        "label": "Rachet Dark",
+        "uiTheme": "vs-dark",
+        "path": "./themes/rachet-color-theme.json"
+      }
+    ]
+  }
+}
