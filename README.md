@@ -1,7 +1,7 @@
 ## License
 
 This compiler is licensed under the [Bean Pringles Compiler License (BPC License) v1.0]
-(https://github.com/Bean-Pringles/Rachet/blob/main/LICENSE.txt).
+(https://github.com/Bean-Pringles/Rachet/blob/main/LICENSE.md).
 
 # Dependencies:
 
