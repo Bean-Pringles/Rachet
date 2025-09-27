@@ -25,6 +25,7 @@ a) Search for the rachet extenion in VS Code by Bean Pringles
 
 b) Press ctrl + shift + p in VS Code and find Developer: Install Extension From Location.
    Then click on the VSExtension folder and click continue.
+   (Please be aware this is for a one time install)
 
 # Set Up
 
