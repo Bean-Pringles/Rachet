@@ -17,6 +17,15 @@ This compiler is licensed under the [Bean Pringles Compiler License (BPC License
 
 6. Pyinstaller
 
+# VS Code Extension
+
+To get the official Rachet extension you can either:
+
+a) Search for the rachet extenion in VS Code
+
+b) Press ctrl + shift + p in VS Code and find Developer: Install Extension From Location.
+   Then click on the VSExtension folder and click continue.
+
 # Set Up
 
 1. Naviagate to the home directory with setup.py
