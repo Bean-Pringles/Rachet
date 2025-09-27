@@ -27,6 +27,9 @@ b) Press ctrl + shift + p in VS Code and find Developer: Install Extension From 
    Then click on the VSExtension folder and click continue.
    (Please be aware this is for a one time install)
 
+c) Press ctrl + shift + p in VS Code and find Developer: Install Extension From Location.
+   Then click on the VSExtension folder and choose the vsix file.
+
 # Set Up
 
 1. Naviagate to the home directory with setup.py
