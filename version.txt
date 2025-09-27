@@ -1,0 +1,8 @@
+Rachet:
+v1.0.1.2
+
+Gears:
+v0.2.2.0
+
+VS Code Extension:
+v0.1.1
