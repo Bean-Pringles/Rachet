@@ -21,7 +21,7 @@ This compiler is licensed under the [Bean Pringles Compiler License (BPC License
 
 To get the official Rachet extension you can either:
 
-a) Search for the rachet extenion in VS Code
+a) Search for the rachet extenion in VS Code by Bean Pringles
 
 b) Press ctrl + shift + p in VS Code and find Developer: Install Extension From Location.
    Then click on the VSExtension folder and click continue.
