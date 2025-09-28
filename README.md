@@ -38,9 +38,11 @@ c) Press ctrl + shift + p in VS Code and find Developer: Install Extension From 
 
 1. Naviagate to the home directory with setup.py
 
-2. Run pyinstaller --onefile --noconsole compiler.py
+2. Run pyinstaller --onefile compiler.py
 
 3. Move the compiled exe back to the folder the setup.py is located in
+
+***You can do steps 1-3 or use the precompiled exe***
 
 4. Run python setup.py (This gives the files its own icon, and it also adds gears to path)
 
