@@ -100,7 +100,7 @@ def refresh_current_path():
         print('    $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "User") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "Machine")')
 
 def create_gears_script():
-    """Create the main gears.py script that handles compile commands."""
+    """Create the main gears.py script that handles compile and fetch commands."""
     base_dir = os.path.dirname(os.path.abspath(__file__))
     gears_script = os.path.join(base_dir, "gears.py")
     
@@ -179,17 +179,51 @@ def compile_rachet_file(file_path):
         print(f"Error running compiler: {e}")
         return 1
 
+def show_rachet_info():
+    """Display Rachet ASCII art and information."""
+    # REPLACE THIS SECTION WITH YOUR ASCII ART                                
+    print ("""
+                                       .:^^^.         |   Rachet is a compiler               
+                                    :75GB##5^         |   based programming laungue         
+                                  .?B####P~           |   designed for easy OS Dev        
+                                 .5####B7         .:  |   by students.      
+                                 !######7        !GP. |        
+                      .:^~~!777!.7#######7..   ^5##B: |   It was made by Bean Pringles            
+                  .^!JY5PPPPB&&&?^B#######BGPY5####5  |   in a hopes that students will         
+                .!Y5PP5YJ?7!7?J!7G################5:  |   learn all about computers.           
+               ~YPPPY7^.      !P###############BP7    |              
+             .?P55Y~        !P#########BYJYYY?!^      |   Have fun, and let's see what       
+             ?P55J.       ~5##########Y~?PP?          |   you can make.          
+            ^5555:      ^J5PPB######5^ :####~         |             
+            !P5P?     ^J555555PB##5~    5###?         |   Good Luck, and may the           
+            !P5P?   ^J5555555555J~      5###?         |   compiler be nice to you,           
+            ^55PJ.^?55555555P5J^       :B###~         |              
+           ..!7!~?5P55555555J^        .P###Y          |   - Bean_Pringles >:D           
+       .~?JY5YYY5P5555555PJ~         !G###5.          |   (https://github.com/Bean-Pringles)         
+      !YPP5555555555555PJ^        :7P###B?            |              
+    .?P55P5PPPP5555555Y~!?7!!!7?YPB#&#BJ:             |              
+    ~P5P57^~!7?5555555?.B&&&&&&&&#BGY!.               |              
+    !P57:      !5555555.~?JYYYY?7~:.                  |              
+    :?:         ?P555PJ                               |              
+              .!Y555PY:                               |              
+            .~YPPP5Y7.                                |              
+            !JJJ?!^.                                  |
+       
+""")
+
 def show_help():
     """Show help information."""
     print("Gears - Rachet Language Toolchain")
     print("")
     print("Usage:")
     print("  gears compile <file.rx>    Compile a Rachet source file")
+    print("  gears fetch                Show Rachet information and ASCII art")
     print("  gears help                 Show this help message")
     print("")
     print("Examples:")
     print("  gears compile main.rx")
     print("  gears compile src/hello.rx")
+    print("  gears fetch")
 
 def main():
     if len(sys.argv) < 2:
@@ -206,6 +240,10 @@ def main():
         
         file_path = sys.argv[2]
         return compile_rachet_file(file_path)
+    
+    elif command == "fetch":
+        show_rachet_info()
+        return 0
     
     elif command == "help" or command == "--help" or command == "-h":
         show_help()
@@ -280,4 +318,5 @@ if __name__ == "__main__":
     print("[*] Done! .rx and .rxc now open with compiler.exe, and 'gears' can be called from anywhere.")
     print("[*] You can now use:")
     print("    gears compile main.rx")
+    print("    gears fetch")
     print("    gears help")
