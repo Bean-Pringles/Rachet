@@ -288,7 +288,10 @@ def move_iso_file(compiler_dir, target_dir, source_filename):
         try:
             # If target file already exists, remove it first
             if os.path.exists(target_iso):
-                os.remove(target_iso)
+                if source_iso == target_iso:
+                    tempVar = 0
+                else:   
+                    os.remove(target_iso)
             
             shutil.move(source_iso, target_iso)
             print(f"[+] Moved main.iso to current directory")
