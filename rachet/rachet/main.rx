@@ -1,0 +1,124 @@
+use crate::iso;
+
+fn main() {
+    # Test 1: Basic print statements
+    print("=== Basic Print Tests ===");
+    print("Hello World!");
+    print("Testing special characters: @#$%^&*()");
+    print("Testing numbers in strings: 123 456");
+    
+    # Test 2: Variable declarations and arithmetic
+    print("=== Variable and Arithmetic Tests ===");
+    let x = 5;
+    let y = 3;
+    let sum = x + y;
+    let product = x * y;
+    let difference = x - y;
+    let quotient = x / y;
+    
+    print("x = ");
+    print(x);
+    print("y = ");  
+    print(y);
+    print("sum = ");
+    print(sum);
+    print("product = ");
+    print(product);
+    print("difference = ");
+    print(difference);
+    print("quotient = ");
+    print(quotient);
+    
+    # Test 3: Complex expressions
+    print("=== Complex Expression Tests ===");
+    let complex = (5 + 3) * 2 - 1;
+    print("(5 + 3) * 2 - 1 = ");
+    print(complex);
+    
+    # Test 4: Type annotations
+    print("=== Type Annotation Tests ===");
+    let typed_int: i32 = 42;
+    let typed_string: string = "Type annotated string";
+    print("typed_int = ");
+    print(typed_int);
+    print(typed_string);
+    
+    # Test 5: Boolean logic and conditionals
+    print("=== Boolean and Conditional Tests ===");
+    let a = 10;
+    let b = 20;
+    
+    if (a == 10) {
+        print("a equals 10 - CORRECT");
+    } else {
+        print("a does not equal 10 - ERROR");
+    }
+    
+    if (a == 10 && b == 20) {
+        print("Both conditions true - CORRECT");
+    } else {
+        print("AND logic failed - ERROR");
+    }
+    
+    if (a == 5 || b == 20) {
+        print("OR logic works - CORRECT");
+    } else {
+        print("OR logic failed - ERROR");
+    }    
+    
+    # Test 6: Nested conditionals
+    print("=== Nested Conditional Tests ===");
+    let score = 85;
+    
+    if (score >= 90) {
+        print("Grade: A");
+    } else if (score >= 80) {
+        print("Grade: B");
+    } else if (score >= 70) {
+        print("Grade: C");
+    } else {
+        print("Grade: F");
+    }    
+    
+    # Test 8: Function calls
+    print("=== Function Call Tests ===");
+    testFunction("Parameter test");
+    mathFunction(7, 3);
+    
+    # Test 9: Match statement
+    print("=== Match Statement Tests ===");
+    let test_input = "hello";
+    match (test_input) {
+        "hello", print("You said hello!");
+        "world", print("You said world!");
+        "quit", print("Goodbye!");
+    }
+    
+    # Test 10: Pause functionality  
+    print("=== Pause Test ===");
+    print("Waiting 2 seconds...");
+    pause(2000);
+    print("Done waiting!");
+    
+    # Test 11: OS command
+    print("=== OS Command Test ===");
+    print("System will shutdown in 3 seconds...");
+    pause(3000);
+    os(shutdown);
+}
+
+fn testFunction(message) {
+    print("Function called with message: ");
+    print(message);
+}
+
+fn mathFunction(num1, num2) {
+    print("Math function called:");
+    let result = num1 + num2;
+    print("Result of addition: ");
+    print(result);
+    
+    let result2 = num1 * num2;  
+    print("Result of multiplication: ");
+    print(result2);
+}
