@@ -12,3 +12,6 @@ gears compress notes.txt --noreplace
 
 gears compile main.rx
 # compiles main.rx
+
+gears fetch
+# prints the gears ascii art
