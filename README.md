@@ -83,12 +83,8 @@ print(x) prints the value of x, you can tell because it doesn't have quotes.
 
 1. Add a input function
 
-2. Add strings
+2. Add unsafe blocks
 
-3. Add if statements
+3. Lots of tears
 
-4. Add unsafe blocks
-
-5. Lots of tears
-
-6. Lots of tears.
+4. Lots of tears.
