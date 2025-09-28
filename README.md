@@ -1,7 +1,11 @@
-## License
+## License:
 
 This compiler is licensed under the [Bean Pringles Compiler License (BPC License) v1.0]
 (https://github.com/Bean-Pringles/Rachet/blob/main/LICENSE.md).
+
+# Notes:
+
+1. Commets are with a #, not a //. They were orginally // but due to parser errors, I changed them to #. Some // may still be around though.
 
 # Dependencies:
 
@@ -17,7 +21,7 @@ This compiler is licensed under the [Bean Pringles Compiler License (BPC License
 
 6. Pyinstaller
 
-# VS Code Extension
+# VS Code Extension:
 
 To get the official Rachet extension you can either:
 
@@ -30,7 +34,7 @@ b) Press ctrl + shift + p in VS Code and find Developer: Install Extension From 
 c) Press ctrl + shift + p in VS Code and find Developer: Install Extension From Location.
    Then click on the VSExtension folder and choose the vsix file.
 
-# Set Up
+# Set Up:
 
 1. Naviagate to the home directory with setup.py
 
