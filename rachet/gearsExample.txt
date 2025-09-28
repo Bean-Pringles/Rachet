@@ -1,0 +1,35 @@
+Here are some practical Gears command examples:
+Basic Development
+bash# Compile your OS kernel with real-time output
+gears compile kernel.rx
+# Shows live: "Parsing... Generating assembly... Building bootloader... Creating ISO..."
+
+# Get project info and ASCII art
+gears fetch
+File Compression & Management
+bash# Compress source files for backup/sharing
+gears compress main.rx driver.rx bootloader.rx
+gears compress *.rx --noreplace    # Keep originals
+
+# Uncompress project files
+gears uncompress project.rxc
+gears uncompress *.rxc --txt       # Extract as .txt files
+
+# Toggle between file formats
+gears transform main.txt           # Becomes main.rx
+gears transform *.rx               # All become .txt files
+Batch Operations
+bash# Compress entire project folder
+gears compress src/*.rx libs/*.rx --noreplace
+
+# Restore all compressed files
+gears uncompress backup/*.rxc
+
+# Convert text drafts to Rachet format
+gears transform drafts/*.txt
+Development Workflow
+bash# Quick compile-test cycle
+gears compile main.rx              # Build and see live output
+# ... test in VM ...
+gears compress main.rx             # Archive working version
+gears transform backup.txt         # Start next iteration
