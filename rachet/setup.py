@@ -1,15 +1,27 @@
 import os
 import subprocess
 import time
-import winreg
+import sys
+import shutil
+import stat
+
+# Detect platform
+IS_WINDOWS = sys.platform == "win32"
+IS_LINUX = sys.platform.startswith("linux")
+
+if IS_WINDOWS:
+    import winreg
 
 def delete_key_recursive(root, key_path):
-    """Recursively delete a registry key and all its subkeys."""
+    """Recursively delete a registry key and all its subkeys (Windows only)."""
+    if not IS_WINDOWS:
+        return
+    
     try:
         with winreg.OpenKey(root, key_path, 0, winreg.KEY_READ | winreg.KEY_WRITE) as key:
             while True:
                 try:
-                    subkey = winreg.EnumKey(key, 0)  # always delete first subkey
+                    subkey = winreg.EnumKey(key, 0)
                     delete_key_recursive(root, f"{key_path}\\{subkey}")
                 except OSError:
                     break
@@ -19,85 +31,186 @@ def delete_key_recursive(root, key_path):
         pass
 
 def register_rct(ext, prog_name, description, icon_path, launcher):
-    """Register a file type with the given extension, icon, and launcher exe."""
+    """Register a file type with the given extension, icon, and launcher (Windows only)."""
+    if not IS_WINDOWS:
+        return
+    
     icon_path = os.path.abspath(icon_path)
     launcher = os.path.abspath(launcher)
 
     root = winreg.HKEY_CURRENT_USER
     classes = r"Software\Classes"
 
-    # Delete old keys
     delete_key_recursive(root, f"{classes}\\{ext}")
     delete_key_recursive(root, f"{classes}\\{prog_name}")
 
-    # Associate extension with ProgID
     with winreg.CreateKey(root, f"{classes}\\{ext}") as key:
         winreg.SetValueEx(key, "", 0, winreg.REG_SZ, prog_name)
         winreg.SetValueEx(key, "PerceivedType", 0, winreg.REG_SZ, "text")
 
-    # ProgID description
     with winreg.CreateKey(root, f"{classes}\\{prog_name}") as key:
         winreg.SetValueEx(key, "", 0, winreg.REG_SZ, description)
 
-    # Default icon
     with winreg.CreateKey(root, f"{classes}\\{prog_name}\\DefaultIcon") as key:
         winreg.SetValueEx(key, "", 0, winreg.REG_SZ, icon_path)
 
-    # Open command → run compiler.exe
     with winreg.CreateKey(root, f"{classes}\\{prog_name}\\Shell\\Open\\Command") as key:
         winreg.SetValueEx(key, "", 0, winreg.REG_SZ, f'"{launcher}" "%1"')
 
     print(f"[+] {ext} files registered with custom icon and launcher.")
 
-def add_to_path_permanent():
-    """Add current script directory to PATH permanently (user-level) and refresh current session."""
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    env_key = r"Environment"
-    root = winreg.HKEY_CURRENT_USER
-
-    with winreg.OpenKey(root, env_key, 0, winreg.KEY_READ | winreg.KEY_WRITE) as key:
-        try:
-            current_path, _ = winreg.QueryValueEx(key, "Path")
-        except FileNotFoundError:
-            current_path = ""
-
-        if base_dir not in current_path:
-            new_path = current_path + ";" + base_dir if current_path else base_dir
-            winreg.SetValueEx(key, "Path", 0, winreg.REG_EXPAND_SZ, new_path)
-            print(f"[+] Added {base_dir} to PATH permanently.")
-            
-            # Refresh PATH in current session
-            refresh_current_path()
+def register_linux_mime_type(ext, mime_type, description, icon_path):
+    """Register MIME type and file association on Linux."""
+    home = os.path.expanduser("~")
+    
+    # Create mime type definition
+    mime_dir = os.path.join(home, ".local", "share", "mime", "packages")
+    os.makedirs(mime_dir, exist_ok=True)
+    
+    mime_file = os.path.join(mime_dir, f"rachet-{ext[1:]}.xml")
+    mime_content = f"""<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+    <mime-type type="{mime_type}">
+        <comment>{description}</comment>
+        <glob pattern="*{ext}"/>
+    </mime-type>
+</mime-info>
+"""
+    
+    with open(mime_file, "w") as f:
+        f.write(mime_content)
+    
+    # Update MIME database
+    try:
+        subprocess.run(["update-mime-database", os.path.join(home, ".local", "share", "mime")], 
+                      check=False, capture_output=True)
+        print(f"[+] Registered MIME type {mime_type} for {ext}")
+    except FileNotFoundError:
+        print("[!] update-mime-database not found, MIME type registration skipped")
+    
+    # Copy icon if it exists
+    if os.path.exists(icon_path):
+        icon_dir = os.path.join(home, ".local", "share", "icons", "hicolor", "48x48", "mimetypes")
+        os.makedirs(icon_dir, exist_ok=True)
+        
+        icon_name = mime_type.replace("/", "-") + ".png"
+        icon_dest = os.path.join(icon_dir, icon_name)
+        
+        # Convert ico to png if needed (requires ImageMagick)
+        if icon_path.endswith(".ico"):
+            try:
+                subprocess.run(["convert", icon_path, icon_dest], check=False, capture_output=True)
+                print(f"[+] Installed icon for {ext}")
+            except FileNotFoundError:
+                print("[!] ImageMagick not found, icon installation skipped")
         else:
-            print("[*] Directory already in PATH.")
+            shutil.copy(icon_path, icon_dest)
+
+def create_linux_desktop_entry():
+    """Create .desktop file for Linux file associations."""
+    home = os.path.expanduser("~")
+    desktop_dir = os.path.join(home, ".local", "share", "applications")
+    os.makedirs(desktop_dir, exist_ok=True)
+    
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    gears_script = os.path.join(base_dir, "gears.py")
+    
+    desktop_content = f"""[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Rachet Compiler
+Comment=Compile Rachet source files
+Exec=python3 "{gears_script}" compile %f
+Icon=text-x-script
+Terminal=true
+Categories=Development;
+MimeType=application/x-rachet;application/x-rachet-compressed;
+"""
+    
+    desktop_file = os.path.join(desktop_dir, "rachet-compiler.desktop")
+    with open(desktop_file, "w") as f:
+        f.write(desktop_content)
+    
+    # Make it executable
+    os.chmod(desktop_file, os.stat(desktop_file).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+    
+    print(f"[+] Created desktop entry for file associations")
+
+def add_to_path_permanent():
+    """Add current script directory to PATH permanently."""
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    if IS_WINDOWS:
+        env_key = r"Environment"
+        root = winreg.HKEY_CURRENT_USER
+
+        with winreg.OpenKey(root, env_key, 0, winreg.KEY_READ | winreg.KEY_WRITE) as key:
+            try:
+                current_path, _ = winreg.QueryValueEx(key, "Path")
+            except FileNotFoundError:
+                current_path = ""
+
+            if base_dir not in current_path:
+                new_path = current_path + ";" + base_dir if current_path else base_dir
+                winreg.SetValueEx(key, "Path", 0, winreg.REG_EXPAND_SZ, new_path)
+                print(f"[+] Added {base_dir} to PATH permanently.")
+                refresh_current_path()
+            else:
+                print("[*] Directory already in PATH.")
+    
+    elif IS_LINUX:
+        home = os.path.expanduser("~")
+        shell_rc = None
+        
+        # Detect shell and appropriate RC file
+        if os.path.exists(os.path.join(home, ".bashrc")):
+            shell_rc = os.path.join(home, ".bashrc")
+        elif os.path.exists(os.path.join(home, ".zshrc")):
+            shell_rc = os.path.join(home, ".zshrc")
+        
+        if shell_rc:
+            with open(shell_rc, "r") as f:
+                content = f.read()
+            
+            path_line = f'export PATH="$PATH:{base_dir}"'
+            
+            if base_dir not in content:
+                with open(shell_rc, "a") as f:
+                    f.write(f"\n# Added by Rachet installer\n{path_line}\n")
+                print(f"[+] Added {base_dir} to PATH in {shell_rc}")
+                print(f"[*] Run 'source {shell_rc}' or restart your terminal to update PATH")
+            else:
+                print("[*] Directory already in PATH.")
+        else:
+            print("[!] Could not find shell RC file. Add this to your PATH manually:")
+            print(f"    export PATH=\"$PATH:{base_dir}\"")
 
 def refresh_current_path():
-    """Refresh the PATH environment variable in the current Python session."""
+    """Refresh the PATH environment variable in the current session (Windows only)."""
+    if not IS_WINDOWS:
+        return
+    
     try:
-        # Get user PATH
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Environment") as key:
             try:
                 user_path, _ = winreg.QueryValueEx(key, "Path")
             except FileNotFoundError:
                 user_path = ""
         
-        # Get system PATH
-        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\CurrentControlSet\Control\Session Manager\Environment") as key:
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, 
+                           r"SYSTEM\CurrentControlSet\Control\Session Manager\Environment") as key:
             try:
                 system_path, _ = winreg.QueryValueEx(key, "Path")
             except FileNotFoundError:
                 system_path = ""
         
-        # Combine and update current session
         combined_path = user_path + ";" + system_path if user_path and system_path else user_path or system_path
         os.environ["PATH"] = combined_path
         
-        print("[+] PATH refreshed in current session. 'gears' command should now work immediately.")
+        print("[+] PATH refreshed in current session.")
         
     except Exception as e:
-        print(f"[!] Could not refresh PATH in current session: {e}")
-        print("[*] You may need to restart your terminal or run:")
-        print('    $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "User") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "Machine")')
+        print(f"[!] Could not refresh PATH: {e}")
 
 def create_gears_script():
     """Create the main gears.py script that handles compile and fetch commands."""
@@ -111,14 +224,17 @@ import shutil
 import zlib
 import glob
 
+IS_WINDOWS = sys.platform == "win32"
+IS_LINUX = sys.platform.startswith("linux")
+
 def to_wsl_path(win_path: str) -> str:
-    """
-    Convert a Windows path like C:\\\\Users\\\\you\\\\file.py
-    to a WSL path like /mnt/c/Users/you/file.py
-    """
+    """Convert a Windows path to WSL path."""
     drive, path = os.path.splitdrive(win_path)
-    # replace backslashes with forward slashes
-    return f"/mnt/{drive[0].lower()}{path.replace('\\\\', '/')}"
+    return f"/mnt/{drive[0].lower()}{path.replace(chr(92), '/')}"
+
+def to_linux_path(path: str) -> str:
+    """Normalize path for Linux."""
+    return os.path.abspath(path)
 
 def compress_file(input_file, noreplace):
     """Compress a .rx or .txt file to .rxc format using zlib."""
@@ -151,7 +267,6 @@ def compress_file(input_file, noreplace):
     except Exception as e:
         print(f"[!] Error compressing {input_file}: {e}")
         return False
-
 
 def uncompress_file(input_file, noreplace, to_txt=False):
     """Uncompress a .rxc file to .rx or .txt format."""
@@ -190,7 +305,6 @@ def uncompress_file(input_file, noreplace, to_txt=False):
         print(f"[!] Error uncompressing {input_file}: {e}")
         return False
 
-
 def transform_file(input_file, noreplace):
     """Transform between .txt and .rx file extensions."""
     if not os.path.isfile(input_file):
@@ -221,7 +335,6 @@ def transform_file(input_file, noreplace):
         print(f"[!] Error transforming {input_file}: {e}")
         return False
 
-
 def process_files(patterns, action, noreplace=False, to_txt=False):
     """Process multiple files matching the given patterns."""
     matched = 0
@@ -241,18 +354,15 @@ def process_files(patterns, action, noreplace=False, to_txt=False):
     print(f"[+] Processed {matched} file(s).")
     return matched > 0
 
-
 def cleanup_compiler_directory(compiler_dir):
     """Clean up temporary files in the compiler directory."""
     print("[*] Cleaning up temporary files...")
     
-    # Remove temp.asm if it exists
     temp_asm = os.path.join(compiler_dir, "temp.asm")
     if os.path.exists(temp_asm):
         os.remove(temp_asm)
         print("[+] Removed temp.asm")
     
-    # Remove __pycache__ directories
     pycache_paths = [
         os.path.join(compiler_dir, "commands", "__pycache__"),
         os.path.join(compiler_dir, "__pycache__")
@@ -262,20 +372,15 @@ def cleanup_compiler_directory(compiler_dir):
         try:
             shutil.rmtree(path)
             print(f"[+] Removed {os.path.basename(path)} directory")
-        except FileNotFoundError:
+        except (FileNotFoundError, OSError):
             pass
-        except Exception as e:
-            print(f"[!] Could not remove {path}: {e}")
 
-    # Remove iso folder
     iso_path = os.path.join(compiler_dir, "iso")
     try:
         shutil.rmtree(iso_path)
         print("[+] Removed iso directory")
-    except FileNotFoundError:
+    except (FileNotFoundError, OSError):
         pass
-    except Exception as e:
-        print(f"[!] Could not remove iso directory: {e}")
 
 def move_iso_file(compiler_dir, target_dir, source_filename):
     """Move main.iso from compiler directory to target directory."""
@@ -286,10 +391,9 @@ def move_iso_file(compiler_dir, target_dir, source_filename):
     
     if os.path.exists(source_iso):
         try:
-            # If target file already exists, remove it first
             if os.path.exists(target_iso):
                 if source_iso == target_iso:
-                    tempVar = 0
+                    return True
                 else:   
                     os.remove(target_iso)
             
@@ -304,83 +408,98 @@ def move_iso_file(compiler_dir, target_dir, source_filename):
         return False
 
 def compile_rachet_file(file_path):
-    """Compile a .rx file using WSL."""
-    # Resolve to absolute path
+    """Compile a .rx file."""
     program_path = os.path.abspath(file_path)
     
-    # Check if file exists
     if not os.path.exists(program_path):
         print(f"Error: File '{file_path}' not found.")
         return 1
     
-    # Check if it's a .rx file
     if not program_path.endswith('.rx'):
         print(f"Error: File '{file_path}' is not a .rx file.")
         return 1
     
-    # Directory of the target program (where gears was called from)
-    program_dir = os.path.dirname(program_path)
     program_name = os.path.basename(program_path)
     
-    # Find compiler.py (assumes it lives in rachet/ under this script's directory)
     this_script_path = os.path.abspath(__file__)
     this_dir = os.path.dirname(this_script_path)
     compiler_dir = os.path.join(this_dir, "rachet")
     compiler_path = os.path.join(compiler_dir, "compiler.py")
     
-    # Check if compiler exists
     if not os.path.exists(compiler_path):
         print(f"Error: Compiler not found at '{compiler_path}'")
         print("Make sure the rachet/compiler.py file exists in the gears directory.")
         return 1
     
-    # Convert paths to WSL format
-    compiler_path_wsl = to_wsl_path(compiler_path)
-    program_path_wsl = to_wsl_path(program_path)
-    compiler_dir_wsl = to_wsl_path(compiler_dir)
-    
     print(f"[*] Compiling {program_name}...")
     
-    # Run inside WSL in the compiler directory, but pass the full path to the source file
-    # Using bash -ic so PATH and tools like xorriso work
-    cmd = f"cd '{compiler_dir_wsl}' && python3 '{compiler_path_wsl}' '{program_path_wsl}'"
+    if IS_WINDOWS:
+        # Use WSL on Windows
+        compiler_path_wsl = to_wsl_path(compiler_path)
+        program_path_wsl = to_wsl_path(program_path)
+        compiler_dir_wsl = to_wsl_path(compiler_dir)
+        
+        cmd = f"cd '{compiler_dir_wsl}' && python3 '{compiler_path_wsl}' '{program_path_wsl}'"
+        
+        try:
+            result = subprocess.run(
+                ["wsl", "bash", "-ic", cmd],
+                text=True
+            )
+            
+            if result.returncode == 0:
+                print("[+] Compilation successful!")
+                current_dir = os.getcwd()
+                iso_moved = move_iso_file(compiler_dir, current_dir, program_name)
+                cleanup_compiler_directory(compiler_dir)
+                
+                if iso_moved:
+                    print(f"[+] Build complete! Your ISO is ready in the current directory.")
+                else:
+                    print("[!] Compilation completed but ISO file could not be moved.")
+            
+            return result.returncode
+            
+        except FileNotFoundError:
+            print("Error: WSL not found. Make sure Windows Subsystem for Linux is installed.")
+            return 1
+        except Exception as e:
+            print(f"Error running compiler: {e}")
+            return 1
     
-    try:
-        # Run the compiler with real-time output
-        result = subprocess.run(
-            ["wsl", "bash", "-ic", cmd],
-            text=True
-        )
-        
-        if result.returncode == 0:
-            # Compilation successful, now move the ISO and cleanup
-            print("[+] Compilation successful!")
+    elif IS_LINUX:
+        # Native compilation on Linux
+        try:
+            result = subprocess.run(
+                ["python3", compiler_path, program_path],
+                cwd=compiler_dir,
+                text=True
+            )
             
-            # Move the generated ISO file to the directory where gears was called
-            current_dir = os.getcwd()
-            iso_moved = move_iso_file(compiler_dir, current_dir, program_name)
+            if result.returncode == 0:
+                print("[+] Compilation successful!")
+                current_dir = os.getcwd()
+                iso_moved = move_iso_file(compiler_dir, current_dir, program_name)
+                cleanup_compiler_directory(compiler_dir)
+                
+                if iso_moved:
+                    print(f"[+] Build complete! Your ISO is ready in the current directory.")
+                else:
+                    print("[!] Compilation completed but ISO file could not be moved.")
             
-            # Clean up temporary files in compiler directory
-            cleanup_compiler_directory(compiler_dir)
+            return result.returncode
             
-            if iso_moved:
-                print(f"[+] Build complete! Your ISO is ready in the current directory.")
-            else:
-                print("[!] Compilation completed but ISO file could not be moved.")
-        
-        return result.returncode
-        
-    except FileNotFoundError:
-        print("Error: WSL not found. Make sure Windows Subsystem for Linux is installed.")
-        return 1
-    except Exception as e:
-        print(f"Error running compiler: {e}")
+        except Exception as e:
+            print(f"Error running compiler: {e}")
+            return 1
+    
+    else:
+        print(f"Error: Unsupported platform '{sys.platform}'")
         return 1
 
 def show_rachet_info():
     """Display Rachet ASCII art and information."""
-    # REPLACE THIS SECTION WITH YOUR ASCII ART                                
-    print ("""
+    print("""
                                        .:^^^.         |   Rachet is a compiler               
                                     :75GB##5^         |   based programming laungue         
                                   .?B####P~           |   designed for easy OS Dev        
@@ -406,7 +525,6 @@ def show_rachet_info():
               .!Y555PY:                               |              
             .~YPPP5Y7.                                |              
             !JJJ?!^.                                  |
-       
 """)
 
 def show_help():
@@ -433,13 +551,9 @@ def show_help():
     print("  gears uncompress main.rxc --txt")
     print("  gears transform main.txt")
     print("  gears fetch")
-    print("")
-    print("Note: The generated ISO file will be moved to the current directory")
-    print("      and temporary files will be cleaned up automatically.")
-
 
 def parse_compression_args(args):
-    """Parse compression-related arguments and return (files, noreplace, to_txt)."""
+    """Parse compression-related arguments."""
     files = []
     noreplace = False
     to_txt = False
@@ -535,59 +649,132 @@ if __name__ == "__main__":
     print(f"[+] Created gears.py script at {gears_script}")
 
 def create_gears_launcher():
-    """Create a gears.bat file in the same dir so 'gears' can be called anywhere."""
+    """Create a launcher script for 'gears' command."""
     base_dir = os.path.dirname(os.path.abspath(__file__))
     gears_script = os.path.join(base_dir, "gears.py")
-    bat_path = os.path.join(base_dir, "gears.bat")
-
-    with open(bat_path, "w") as f:
-        f.write(f'@echo off\npython "{gears_script}" %*\n')
-
-    print(f"[+] Created launcher: {bat_path} (callable as 'gears')")
+    
+    if IS_WINDOWS:
+        bat_path = os.path.join(base_dir, "gears.bat")
+        with open(bat_path, "w") as f:
+            f.write(f'@echo off\npython "{gears_script}" %*\n')
+        print(f"[+] Created launcher: {bat_path}")
+    
+    elif IS_LINUX:
+        sh_path = os.path.join(base_dir, "gears")
+        with open(sh_path, "w") as f:
+            f.write(f'#!/bin/bash\npython3 "{gears_script}" "$@"\n')
+        
+        # Make it executable
+        os.chmod(sh_path, os.stat(sh_path).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        print(f"[+] Created launcher: {sh_path}")
 
 def restart_explorer():
-    """Restart Windows Explorer to refresh icons."""
+    """Restart Windows Explorer to refresh icons (Windows only)."""
+    if not IS_WINDOWS:
+        return
+    
     print("[*] Restarting Explorer to refresh icons...")
     subprocess.run("taskkill /IM explorer.exe /F", shell=True)
     time.sleep(1)
     subprocess.run("start explorer.exe", shell=True)
     print("[+] Explorer restarted. Icons should update immediately.")
 
-if __name__ == "__main__":
+def main():
+    """Main installation routine."""
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    compiler_exe = os.path.join(base_dir, "compiler.exe")
+    
+    print(f"[*] Installing Rachet on {sys.platform}...")
+    
+    if IS_WINDOWS:
+        compiler_exe = os.path.join(base_dir, "compiler.exe")
+        
+        print("[*] Clearing old registry entries...")
+        delete_key_recursive(winreg.HKEY_CURRENT_USER, r"Software\Classes\.rx")
+        delete_key_recursive(winreg.HKEY_CURRENT_USER, r"Software\Classes\RachetFile")
+        delete_key_recursive(winreg.HKEY_CURRENT_USER, r"Software\Classes\.rxc")
+        delete_key_recursive(winreg.HKEY_CURRENT_USER, r"Software\Classes\RachetCompressedFile")
 
-    print("[*] Clearing old registry entries...")
-    delete_key_recursive(winreg.HKEY_CURRENT_USER, r"Software\Classes\.rx")
-    delete_key_recursive(winreg.HKEY_CURRENT_USER, r"Software\Classes\RachetFile")
-    delete_key_recursive(winreg.HKEY_CURRENT_USER, r"Software\Classes\.rxc")
-    delete_key_recursive(winreg.HKEY_CURRENT_USER, r"Software\Classes\RachetCompressedFile")
+        print("[*] Registering .rx file type...")
+        register_rct(
+            ext=".rx",
+            prog_name="RachetFile",
+            description="Rachet Source File",
+            icon_path=os.path.join(base_dir, "rachet.ico"),
+            launcher=compiler_exe
+        )
 
-    print("[*] Registering .rx file type...")
-    register_rct(
-        ext=".rx",
-        prog_name="RachetFile",
-        description="Rachet Source File",
-        icon_path=os.path.join(base_dir, "rachet.ico"),
-        launcher=compiler_exe
-    )
+        print("[*] Registering .rxc file type...")
+        register_rct(
+            ext=".rxc",
+            prog_name="RachetCompressedFile",
+            description="Rachet Compressed File",
+            icon_path=os.path.join(base_dir, "rachet_compressed.ico"),
+            launcher=compiler_exe
+        )
 
-    print("[*] Registering .rxc file type...")
-    register_rct(
-        ext=".rxc",
-        prog_name="RachetCompressedFile",
-        description="Rachet Compressed File",
-        icon_path=os.path.join(base_dir, "rachet_compressed.ico"),
-        launcher=compiler_exe
-    )
+        add_to_path_permanent()
+        create_gears_script()
+        create_gears_launcher()
+        restart_explorer()
 
-    add_to_path_permanent()
-    create_gears_script()
-    create_gears_launcher()
-    restart_explorer()
+        print("\n[*] Done! .rx and .rxc now open with compiler.exe, and 'gears' can be called from anywhere.")
+        print("[*] You can now use:")
+        print("    gears compile main.rx")
+        print("    gears compress *.rx")
+        print("    gears uncompress *.rxc")
+        print("    gears fetch")
+        print("    gears help")
+        
+        return 0
+    
+    elif IS_LINUX:
+        print("[*] Registering MIME types...")
+        register_linux_mime_type(
+            ext=".rx",
+            mime_type="application/x-rachet",
+            description="Rachet Source File",
+            icon_path=os.path.join(base_dir, "rachet.png")
+        )
+        
+        register_linux_mime_type(
+            ext=".rxc",
+            mime_type="application/x-rachet-compressed",
+            description="Rachet Compressed File",
+            icon_path=os.path.join(base_dir, "rachet_compressed.png")
+        )
+        
+        print("[*] Creating desktop entry...")
+        create_linux_desktop_entry()
+        
+        add_to_path_permanent()
+        create_gears_script()
+        create_gears_launcher()
+        
+        print("\n[*] Done! File associations registered.")
+        print("[*] You can now use:")
+        print("    gears compile main.rx")
+        print("    gears compress *.rx")
+        print("    gears uncompress *.rxc")
+        print("    gears fetch")
+        print("    gears help")
+        print("")
+        print("[!] Note: You may need to restart your terminal or run:")
+        home = os.path.expanduser("~")
+        if os.path.exists(os.path.join(home, ".bashrc")):
+            print("    source ~/.bashrc")
+        elif os.path.exists(os.path.join(home, ".zshrc")):
+            print("    source ~/.zshrc")
+        print("    to make the 'gears' command available in your current session.")
+        
+        return 0
+    
+    else:
+        print(f"[!] Unsupported platform: {sys.platform}")
+        print("[*] Creating gears script anyway...")
+        create_gears_script()
+        create_gears_launcher()
+        print("[*] You may need to manually add the directory to your PATH.")
+        return 1
 
-    print("[*] Done! .rx and .rxc now open with compiler.exe, and 'gears' can be called from anywhere.")
-    print("[*] You can now use:")
-    print("    gears compile main.rx")
-    print("    gears fetch")
-    print("    gears help")
+if __name__ == "__main__":
+    sys.exit(main())
